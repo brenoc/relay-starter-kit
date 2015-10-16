@@ -3,14 +3,11 @@ import Relay from 'react-relay';
 
 class App extends React.Component {
   render() {
+    console.log(this.props);
     return (
       <div>
-        <h1>Widget list</h1>
-        <ul>
-          {this.props.viewer.widgets.edges.map(edge =>
-            <li>{edge.node.name} (ID: {edge.node.id})</li>
-          )}
-        </ul>
+        <h1>Product</h1>
+        <pre>{JSON.stringify(this.props, null, 2)}</pre>
       </div>
     );
   }
@@ -18,16 +15,20 @@ class App extends React.Component {
 
 export default Relay.createContainer(App, {
   fragments: {
-    viewer: () => Relay.QL`
-      fragment on User {
-        widgets(first: 10) {
+    product: () => Relay.QL`
+      fragment on Product {
+        id,
+        name,
+        categories(first: 10) {
           edges {
             node {
-              id,
-              name,
-            },
-          },
+              name
+            }
+          }
         },
+        brand {
+          name
+        }
       }
     `,
   },

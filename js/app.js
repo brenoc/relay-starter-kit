@@ -9,7 +9,7 @@ import Relay from 'react-relay';
 ReactDOM.render(
   <Relay.RootContainer
     Component={App}
-    route={new AppHomeRoute()}
+    route={new AppHomeRoute({productId: 'p_1'})}
   />,
   document.getElementById('root')
 );
