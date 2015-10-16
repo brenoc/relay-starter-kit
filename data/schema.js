@@ -31,12 +31,13 @@ import {
 
 import {
   // Import methods that your schema can use to interact with your database
-  User,
-  Widget,
-  getUser,
-  getViewer,
-  getWidget,
-  getWidgets,
+  Brand,
+  Product,
+  Category,
+  getBrand,
+  getProduct,
+  getCategory,
+  getCategories,
 } from './database';
 
 /**
@@ -45,22 +46,34 @@ import {
  * The first method defines the way we resolve an ID to its object.
  * The second defines the way we resolve an object to its GraphQL type.
  */
+var getId = function(type, id) {
+  switch(type) {
+    case 'Brand':
+      return getBrand(id);
+      break;
+    case 'Category':
+      return getCategory(id);
+      break;
+    case 'Product':
+      return getProduct(id);
+      break;
+    default:
+      return null;
+  }
+};
+
 var {nodeInterface, nodeField} = nodeDefinitions(
   (globalId) => {
     var {type, id} = fromGlobalId(globalId);
-    if (type === 'User') {
-      return getUser(id);
-    } else if (type === 'Widget') {
-      return getWidget(id);
-    } else {
-      return null;
-    }
+    return getId(type, id);
   },
   (obj) => {
-    if (obj instanceof User) {
-      return userType;
-    } else if (obj instanceof Widget)  {
-      return widgetType;
+    if (obj instanceof Brand) {
+      return brandType;
+    } else if (obj instanceof Category)  {
+      return categoryType;
+    } else if (obj instanceof Product)  {
+      return productType;
     } else {
       return null;
     }
@@ -71,39 +84,106 @@ var {nodeInterface, nodeField} = nodeDefinitions(
  * Define your own types here
  */
 
-var userType = new GraphQLObjectType({
-  name: 'User',
-  description: 'A person who uses our app',
+var brandType = new GraphQLObjectType({
+  name: 'Brand',
+  description: 'A product brand',
   fields: () => ({
-    id: globalIdField('User'),
-    widgets: {
-      type: widgetConnection,
-      description: 'A person\'s collection of widgets',
-      args: connectionArgs,
-      resolve: (_, args) => connectionFromArray(getWidgets(), args),
+    id: globalIdField('Brand'),
+    slug: {
+      type: GraphQLString,
+      description: 'The slug of the brand',
     },
-  }),
-  interfaces: [nodeInterface],
-});
-
-var widgetType = new GraphQLObjectType({
-  name: 'Widget',
-  description: 'A shiny widget',
-  fields: () => ({
-    id: globalIdField('Widget'),
     name: {
       type: GraphQLString,
-      description: 'The name of the widget',
+      description: 'The name of the brand'
+    },
+    logo: {
+      type: GraphQLString,
+      description: 'The URL to the brand logo'
     },
   }),
   interfaces: [nodeInterface],
-});
+})
+
+var categoryType = new GraphQLObjectType({
+  name: 'Category',
+  description: 'A product category',
+  fields: () => ({
+    id: globalIdField('Category'),
+    slug: {
+      type: GraphQLString,
+      description: 'The slug of the category',
+    },
+    name: {
+      type: GraphQLString,
+      description: 'The name of the category'
+    },
+    children: {
+      type: categoryConnection,
+      description: 'Children category',
+      args: connectionArgs,
+      resolve: (category, args) => {
+        return connectionFromArray(getCategories(category.children), args)
+      },
+    },
+  }),
+  interfaces: [nodeInterface],
+})
+
+var productType = new GraphQLObjectType({
+  name: 'Product',
+  description: 'A product',
+  fields: () => ({
+    id: globalIdField('Product'),
+    slug: {
+      type: GraphQLString,
+      description: 'The slug of the product',
+    },
+    name: {
+      type: GraphQLString,
+      description: 'The name of the product'
+    },
+    categories: {
+      type: categoryConnection,
+      description: 'Product categories',
+      args: connectionArgs,
+      resolve: (product, args) => {
+        return connectionFromArray(getCategories(product.categories), args)
+      }
+    },
+    brand: {
+      type: brandType,
+      description: 'Product brand',
+      resolve: (product, args) => {
+        return getBrand(product.brand);
+      }
+    }
+  })
+})
 
 /**
  * Define your own connection types here
  */
-var {connectionType: widgetConnection} =
-  connectionDefinitions({name: 'Widget', nodeType: widgetType});
+var {connectionType: categoryConnection} =
+  connectionDefinitions({name: 'Category', nodeType: categoryType});
+
+function rootFieldById(typeName, type) {
+  return {
+    name: `${typeName}Query`,
+    type: type,
+    args: {
+      id: {
+        name: 'id',
+        type: GraphQLID
+      }
+    },
+    resolve: (_, {id, ...args}) => {
+      if (id !== undefined && id !== null) {
+        return getId(typeName, id);
+      }
+    },
+  };
+}
 
 /**
  * This is the type that will be the root of our query,
@@ -114,10 +194,7 @@ var queryType = new GraphQLObjectType({
   fields: () => ({
     node: nodeField,
     // Add your own root fields here
-    viewer: {
-      type: userType,
-      resolve: () => getViewer(),
-    },
+    product: rootFieldById('Product', productType)
   }),
 });
 
