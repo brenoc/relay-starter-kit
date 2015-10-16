@@ -8,26 +8,49 @@
  */
 
 // Model types
-class User extends Object {}
-class Widget extends Object {}
+class Brand extends Object {}
+class Category extends Object {}
+class Product extends Object {}
 
 // Mock data
-var viewer = new User();
-viewer.id = '1';
-viewer.name = 'Anonymous';
-var widgets = ['What\'s-it', 'Who\'s-it', 'How\'s-it'].map((name, i) => {
-  var widget = new Widget();
-  widget.name = name;
-  widget.id = `${i}`;
-  return widget;
+var brands = ['Nike', 'Brinks'].map((name, i) => {
+  var brand = new Brand();
+  brand.id = `b_${i}`;
+  brand.name = name;
+  brand.slug = name.toLowerCase().replace(' ', '-');
+  return brand;
+})
+
+var categories = ['camisetas', 'brinquedos'].map((name, i) => {
+  var category = new Category();
+  category.id = `c_${i}`;
+  category.name = name;
+  category.slug = name.toLowerCase().replace(' ', '-');
+  return category;
+})
+
+var products = ['Camisa Polo', 'Bola Vermelha'].map((name, i) => {
+  var product = new Product();
+  product.id = `p_${i}`;
+  product.name = name;
+  product.slug = name.toLowerCase().replace(' ', '-');
+  product.categories = [`c_${i}`];
+  product.brand = `b_${i}`;
+  return product;
 });
+
 
 module.exports = {
   // Export methods that your schema can use to interact with your database
-  getUser: (id) => id === viewer.id ? viewer : null,
-  getViewer: () => viewer,
-  getWidget: (id) => widgets.find(w => w.id === id),
-  getWidgets: () => widgets,
-  User,
-  Widget,
+  getBrand: (id) => brands.find(b => b.id === id),
+  getProduct: (id) => products.find(p => p.id === id),
+  getCategory: (id) => categories.find(c => c.id === id),
+  getCategories: (ids) => {
+    return categories.filter((category) => {
+      return (ids.filter((id) => id === category.id)).length > 0;
+    })
+  },
+  Brand,
+  Category,
+  Product
 };
